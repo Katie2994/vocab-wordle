@@ -195,18 +195,18 @@ LAPTOP: `LAPTOP
   
   Vietnamese: Máy tính xách tay là một máy tính di động có thể được sử dụng cho nhiều nhiệm vụ khác nhau như công việc, học tập và giải trí. Chúng nhỏ gọn và tiện lợi để di chuyển.`,
   
-LEMON: `LEMON
-  (/ˈlem.ən/)
+  CHERRY: `CHERRY
+  (/ˈtʃeri/)
   
-  Word form: noun. Vietnamese meaning: Quả chanh
+  Word form: noun. Vietnamese meaning: Quả anh đào
   
   Examples:
-  • She squeezed a lemon into her tea.
-  • Lemons are rich in vitamin C.
+  • She topped her ice cream with a cherry.
+  • Cherries are often used in desserts and jams.
   
-  Short paragraph: Lemons are citrus fruits known for their sour taste. They are used in cooking, baking, and beverages to add flavor.
+  Short paragraph: Cherries are small, round fruits that come in red and dark red varieties. They are sweet and juicy, making them a popular choice for eating fresh and using in various culinary dishes.
   
-  Vietnamese: Quả chanh là loại trái cây có múi, được biết đến với vị chua. Chúng được sử dụng trong nấu ăn, làm bánh và đồ uống để tăng hương vị.`,
+  Vietnamese: Quả anh đào là loại trái cây nhỏ, tròn, có các giống màu đỏ và đỏ thẫm. Chúng ngọt và mọng nước, là sự lựa chọn phổ biến để ăn tươi và sử dụng trong các món ăn khác nhau.`,
   
 MONKEY: `MONKEY
   (/ˈmʌŋ.ki/)
