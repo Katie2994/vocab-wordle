@@ -51,8 +51,8 @@ const Wordle: React.FC = () => {
   const [showInstructions, setShowInstructions] = useState<boolean>(false);
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
   const [windowDimensions, setWindowDimensions] = useState<{ width: number; height: number }>({
-    width: 0,
-    height:0,
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
   });
   const [keyStates, setKeyStates] = useState<{ [key: string]: string }>({});
 
