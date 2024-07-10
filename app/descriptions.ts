@@ -1260,7 +1260,7 @@ QUENCH: `QUENCH
   
   Short paragraph: Quench means to satisfy a need, especially for liquid, or to extinguish something, such as a fire. It can apply to both physical and metaphorical needs.
   
-  Vietnamese: Dập tắt có nghĩa là thỏa mãn một nhu cầu, đặc biệt là đối với chất lỏng, hoặc dập tắt một thứ gì đó, chẳng hạn như lửa. Nó có thể áp dụng cho cả nhu cầu vật chất và ẩn dụ.`,
+  Vietnamese: Quench có nghĩa là thỏa mãn một nhu cầu, đặc biệt là đối với chất lỏng, hoặc dập tắt một thứ gì đó, chẳng hạn như lửa. Nó có thể áp dụng cho cả nhu cầu vật chất và ẩn dụ.`,
   
 ROBUST: `ROBUST
   (/rəʊˈbʌst/)
