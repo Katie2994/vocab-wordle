@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { AlertCircle } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { AlertCircle, HelpCircle, X, RefreshCw, Share2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Confetti from "react-confetti";
 import { easyWords, mediumWords, hardWords } from "./words";
 import { descriptions } from "./descriptions";
+import { toPng } from "html-to-image";
 
 const keys = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
   ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-  ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "BACKSPACE"]
+  ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "⏎"]
 ];
 
 interface KeyboardProps {
@@ -28,7 +29,9 @@ const Keyboard: React.FC<KeyboardProps> = ({ onKeyPress, keyStates }) => (
           <Button
             key={key}
             onClick={() => onKeyPress(key)}
-            className={`${keyStates[key] || "bg-gray-400"} text-white text-lg mr-1`}
+            className={`${
+              keyStates[key] || "bg-gray-400"
+            } text-white text-sm m-0.5 px-2.5 py-4 flex-grow min-w-[30px]`}
           >
             {key}
           </Button>
@@ -56,8 +59,13 @@ const Wordle: React.FC = () => {
   });
   const [keyStates, setKeyStates] = useState<{ [key: string]: string }>({});
 
-  const instructions = `Hướng dẫn chơi: Nhập từ dự đoán của bạn và nhấn Enter. Bạn có 6 lượt đoán. Màu xanh lá cây nghĩa là chữ cái đúng vị trí, màu vàng nghĩa là chữ cái đúng nhưng sai vị trí, và màu xám nghĩa là chữ cái sai. Các từ phải có 6 chữ cái.
-Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn mức độ dễ, trung bình hoặc khó.`;
+  const instructions = `
+  - Nhập từ dự đoán của bạn và nhấn Enter. Các từ phải có 6 chữ cái.
+  - Bạn có 6 lượt đoán. Màu xanh lá cây nghĩa là chữ cái đúng vị trí, màu vàng nghĩa là chữ cái đúng nhưng sai vị trí, và màu xám nghĩa là chữ cái sai. 
+  - Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn mức độ dễ, trung bình hoặc khó.
+  `;
+
+  const gameRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const selectWord = () => {
@@ -144,7 +152,7 @@ Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn m�
         setGameOver(true);
         setMessage(`Game over! The word was ${word}`);
       }
-    } else if (key === "BACKSPACE") {
+    } else if (key === "⏎" || key === "BACKSPACE") {
       setCurrentGuess((prev) => prev.slice(0, -1));
     } else if (/^[A-Za-z]$/.test(key) && currentGuess.length < word.length) {
       setCurrentGuess((prev) => prev + key.toUpperCase());
@@ -171,7 +179,7 @@ Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn m�
             guess[j] ||
             (i === guesses.findIndex((g) => g === "") ? currentGuess[j] : "");
           let className =
-            "w-14 h-14 border-2 border-gray-700 flex items-center justify-center text-2xl font-bold mr-2 transition-all duration-300";
+            "w-11 h-11 border-2 border-gray-700 flex items-center justify-center text-lg font-bold mr-1 transition-all duration-300";
           if (guess) {
             if (letter === word[j]) {
               className += " bg-green-500 text-white border-green-500";
@@ -222,8 +230,30 @@ Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn m�
     setKeyStates({});
   };
 
+  const handleShare = async () => {
+    if (gameRef.current) {
+      try {
+        const dataUrl = await toPng(gameRef.current);
+        const blob = await (await fetch(dataUrl)).blob();
+        const filesArray = [new File([blob], "wordle-snapshot.png", { type: "image/png" })];
+
+        if (navigator.canShare && navigator.canShare({ files: filesArray })) {
+          await navigator.share({
+            files: filesArray,
+            text: "Check out my Wordle game snapshot!",
+            url: window.location.href,
+          });
+        } else {
+          alert("Sharing is not supported in your browser.");
+        }
+      } catch (error) {
+        console.error("Error sharing the game snapshot:", error);
+      }
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+    <div className="relative flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4" ref={gameRef}>
       {showConfetti && (
         <Confetti
           width={windowDimensions.width}
@@ -233,17 +263,49 @@ Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn m�
         />
       )}
       <motion.h1
-        className="text-4xl font-bold mb-4"
+        className="text-4xl font-bold mb-1"
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         Vocab Wordle
       </motion.h1>
+      <div className="text-sm text-gray-500 mb-0">@ieltsdrills</div>
+      <div className="flex space-x-2 mb-2 justify-center">
+        <Button onClick={() => setShowInstructions(!showInstructions)} className="mt-0">
+          <HelpCircle className="h-6 w-6" />
+        </Button>
+        <Button onClick={restartGame} className="mt-0">
+          <RefreshCw className="h-6 w-6" />
+        </Button>
+        <Button onClick={handleShare} className="mt-0">
+          <Share2 className="h-6 w-6" />
+        </Button>
+      </div>
+      {showInstructions && (
+        <motion.div
+          className="absolute w-80 bg-white border border-gray-300 rounded-lg p-4 shadow-lg z-10"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-2xl font-bold">Instructions</h2>
+            <Button onClick={() => setShowInstructions(false)} className="p-1">
+              <X className="h-5 w-5 mb-2" />
+            </Button>
+          </div>
+          <div className="text-left">
+            <p>- Nhập từ dự đoán của bạn và nhấn Enter. Các từ phải có 6 chữ cái.</p>
+            <p>- Bạn có 6 lượt đoán. Màu xanh lá cây nghĩa là chữ cái đúng vị trí, màu vàng nghĩa là chữ cái đúng nhưng sai vị trí, và màu xám nghĩa là chữ cái sai.</p>
+            <p>- Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn mức độ dễ, trung bình hoặc khó.</p>
+          </div>
+        </motion.div>
+      )}
       <div className="flex justify-center mb-4">
         <Button
           onClick={() => setShowDifficultyButtons(!showDifficultyButtons)}
-          className="bg-gray-500 text-white text-lg"
+          className="bg-gray-500 text-white text-sm"
         >
           Choose Difficulty Level
         </Button>
@@ -256,7 +318,9 @@ Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn m�
               setShowDifficultyButtons(false);
               restartGame();
             }}
-            className="bg-[#0d47a1] text-white text-lg mr-2"
+            className={`bg-yellow-300 text-black text-xs p-1 mr-2 w-16 h-8 ${
+              difficulty === "easy" ? "ring-2 ring-black" : ""
+            }`}
           >
             Easy
           </Button>
@@ -266,7 +330,9 @@ Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn m�
               setShowDifficultyButtons(false);
               restartGame();
             }}
-            className="bg-[#0d47a1] text-white text-lg mr-2"
+            className={`bg-yellow-300 text-black text-xs p-1 mr-2 w-16 h-8 ${
+              difficulty === "medium" ? "ring-2 ring-black" : ""
+            }`}
           >
             Medium
           </Button>
@@ -276,7 +342,9 @@ Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn m�
               setShowDifficultyButtons(false);
               restartGame();
             }}
-            className="bg-[#0d47a1] text-white text-lg"
+            className={`bg-yellow-300 text-black text-xs p-1 mr-2 w-16 h-8 ${
+              difficulty === "hard" ? "ring-2 ring-black" : ""
+            }`}
           >
             Hard
           </Button>
@@ -290,24 +358,12 @@ Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn m�
         {renderGrid()}
       </motion.div>
       <Keyboard onKeyPress={handleKeyPress} keyStates={keyStates} />
-      <Button
-        onClick={restartGame}
-        className="mb-4"
-        style={{
-          backgroundColor: "#d32f2f",
-          color: "#ffeb3b",
-          fontSize: "1.25rem",
-        }}
-      >
-        Restart Game
-      </Button>
       {message && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="mt-3 p-4 bg-white border-gray-300 rounded-md"
-          
         >
           <Alert>
             <AlertCircle className="h-4 w-4" />
@@ -326,23 +382,7 @@ Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn m�
             )}
           </Alert>
         </motion.div>
-      
       )}
-      <div className="absolute top-4 left-4 mr-4">
-        <motion.div
-          className="p-4 bg-white border border-gray-200 rounded cursor-pointer flex items-center"
-          onClick={() => setShowInstructions(!showInstructions)}
-          style={{ overflow: 'hidden' }}
-        >
-          <AlertCircle className={`mr-4 ${showInstructions ? 'h-8 w-8' : 'h-4 w-4'}`} />
-          <div>
-            <AlertTitle>Hướng dẫn chơi</AlertTitle>
-            {showInstructions && (
-              <AlertDescription>{instructions}</AlertDescription>
-            )}
-          </div>
-        </motion.div>
-      </div>
     </div>
   );
 };

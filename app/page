@@ -1,0 +1,9 @@
+import VocabWordle from './vocab-wordle'
+
+export default function Home() {
+  return (
+    <main>
+      <VocabWordle />
+    </main>
+  )
+}
