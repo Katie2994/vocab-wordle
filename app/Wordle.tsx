@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { AlertCircle, HelpCircle, X, RefreshCw, Share2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { toPng } from "html-to-image";
 const keys = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
   ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-  ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "⏎"]
+  ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "⏎"],
 ];
 
 interface KeyboardProps {
@@ -58,12 +58,6 @@ const Wordle: React.FC = () => {
     height: typeof window !== "undefined" ? window.innerHeight : 0,
   });
   const [keyStates, setKeyStates] = useState<{ [key: string]: string }>({});
-
-  const instructions = `
-  - Nhập từ dự đoán của bạn và nhấn Enter. Các từ phải có 6 chữ cái.
-  - Bạn có 6 lượt đoán. Màu xanh lá cây nghĩa là chữ cái đúng vị trí, màu vàng nghĩa là chữ cái đúng nhưng sai vị trí, và màu xám nghĩa là chữ cái sai. 
-  - Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn mức độ dễ, trung bình hoặc khó.
-  `;
 
   const gameRef = useRef<HTMLDivElement>(null);
 
@@ -113,7 +107,7 @@ const Wordle: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const updateKeyStates = (guess: string) => {
+  const updateKeyStates = useCallback((guess: string) => {
     const newKeyStates = { ...keyStates };
     guess.split("").forEach((letter, index) => {
       if (word[index] === letter) {
@@ -125,45 +119,60 @@ const Wordle: React.FC = () => {
       }
     });
     setKeyStates(newKeyStates);
-  };
+  }, [word, keyStates]);
 
-  const handleKeyPress = (key: string) => {
-    if (gameOver) return;
+  const handleKeyPress = useCallback(
+    (key: string) => {
+      if (gameOver) return;
 
-    if (key === "ENTER") {
-      if (currentGuess.length !== word.length) {
-        setMessage(`Word must be ${word.length} letters long`);
-        setShake(true);
-        setTimeout(() => setShake(false), 300);
-        return;
+      if (key === "ENTER") {
+        if (currentGuess.length !== word.length) {
+          setMessage(`Word must be ${word.length} letters long`);
+          setShake(true);
+          setTimeout(() => setShake(false), 300);
+          return;
+        }
+        const newGuesses = [...guesses];
+        const currentGuessIndex = newGuesses.findIndex((guess) => guess === "");
+        newGuesses[currentGuessIndex] = currentGuess;
+        setGuesses(newGuesses);
+        updateKeyStates(currentGuess);
+        setCurrentGuess("");
+
+        if (currentGuess === word) {
+          setGameOver(true);
+          setMessage("Congratulations! You guessed the word!");
+          setShowConfetti(true);
+        } else if (currentGuessIndex === 5) {
+          setGameOver(true);
+          setMessage(`Game over! The word was ${word}`);
+        }
+      } else if (key === "⏎" || key === "BACKSPACE") {
+        setCurrentGuess((prev) => prev.slice(0, -1));
+      } else if (/^[A-Za-z]$/.test(key) && currentGuess.length < word.length) {
+        setCurrentGuess((prev) => prev + key.toUpperCase());
       }
-      const newGuesses = [...guesses];
-      const currentGuessIndex = newGuesses.findIndex((guess) => guess === "");
-      newGuesses[currentGuessIndex] = currentGuess;
-      setGuesses(newGuesses);
-      updateKeyStates(currentGuess);
-      setCurrentGuess("");
-
-      if (currentGuess === word) {
-        setGameOver(true);
-        setMessage("Congratulations! You guessed the word!");
-        setShowConfetti(true);
-      } else if (currentGuessIndex === 5) {
-        setGameOver(true);
-        setMessage(`Game over! The word was ${word}`);
-      }
-    } else if (key === "⏎" || key === "BACKSPACE") {
-      setCurrentGuess((prev) => prev.slice(0, -1));
-    } else if (/^[A-Za-z]$/.test(key) && currentGuess.length < word.length) {
-      setCurrentGuess((prev) => prev + key.toUpperCase());
-    }
-  };
+    },
+    [
+      gameOver,
+      currentGuess,
+      word,
+      setMessage,
+      setShake,
+      setGuesses,
+      updateKeyStates,
+      setCurrentGuess,
+      setGameOver,
+      setShowConfetti,
+      guesses,
+    ]
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => handleKeyPress(e.key.toUpperCase());
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentGuess, gameOver, word]);
+  }, [handleKeyPress]);
 
   const renderGrid = () => {
     return guesses.map((guess, i) => (
@@ -235,7 +244,9 @@ const Wordle: React.FC = () => {
       try {
         const dataUrl = await toPng(gameRef.current);
         const blob = await (await fetch(dataUrl)).blob();
-        const filesArray = [new File([blob], "wordle-snapshot.png", { type: "image/png" })];
+        const filesArray = [
+          new File([blob], "wordle-snapshot.png", { type: "image/png" }),
+        ];
 
         if (navigator.canShare && navigator.canShare({ files: filesArray })) {
           await navigator.share({
@@ -252,8 +263,19 @@ const Wordle: React.FC = () => {
     }
   };
 
+  const InstructionsContent = () => (
+    <div className="text-left">
+      <p>- Nhập từ dự đoán của bạn và nhấn Enter. Các từ phải có 6 chữ cái.</p>
+      <p>- Bạn có 6 lượt đoán. Màu xanh lá cây nghĩa là chữ cái đúng vị trí, màu vàng nghĩa là chữ cái đúng nhưng sai vị trí, và màu xám nghĩa là chữ cái sai.</p>
+      <p>- Chọn chế độ chơi: Nhấn nút &quot;Choose Difficulty Level&quot; để chọn mức độ dễ, trung bình hoặc khó.</p>
+    </div>
+);
+
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4" ref={gameRef}>
+    <div
+      className="relative flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4"
+      ref={gameRef}
+    >
       {showConfetti && (
         <Confetti
           width={windowDimensions.width}
@@ -295,11 +317,7 @@ const Wordle: React.FC = () => {
               <X className="h-5 w-5 mb-2" />
             </Button>
           </div>
-          <div className="text-left">
-            <p>- Nhập từ dự đoán của bạn và nhấn Enter. Các từ phải có 6 chữ cái.</p>
-            <p>- Bạn có 6 lượt đoán. Màu xanh lá cây nghĩa là chữ cái đúng vị trí, màu vàng nghĩa là chữ cái đúng nhưng sai vị trí, và màu xám nghĩa là chữ cái sai.</p>
-            <p>- Chọn chế độ chơi: Nhấn nút "Choose Difficulty Level" để chọn mức độ dễ, trung bình hoặc khó.</p>
-          </div>
+          <InstructionsContent />
         </motion.div>
       )}
       <div className="flex justify-center mb-4">
@@ -375,10 +393,7 @@ const Wordle: React.FC = () => {
             {gameOver && (
               <AlertDescription
                 style={{ whiteSpace: "pre-line" }}
-              >{`Word Description:\n${wordDescription.replace(
-                /\.\s+/g,
-                ".\n"
-              )}`}</AlertDescription>
+              >{`Word Description:\n${wordDescription.replace(/\.\s+/g, ".\n")}`}</AlertDescription>
             )}
           </Alert>
         </motion.div>
